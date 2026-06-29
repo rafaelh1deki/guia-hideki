@@ -3,112 +3,113 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rafael Hideki · Mapa de Viagens</title>
-  <meta name="description" content="O mapa das minhas viagens. Explore os lugares por onde passei." />
+  <title>Rafael Hideki · Mapa de Lugares</title>
+  <meta name="description" content="O mapa dos lugares que eu já fui — e as indicações de quem me segue." />
 
-  <!-- Open Graph (preview bonito ao compartilhar o link) -->
-  <meta property="og:title" content="Rafael Hideki · Mapa de Viagens" />
-  <meta property="og:description" content="Explore o mapa dos lugares por onde passei." />
+  <meta property="og:title" content="Rafael Hideki · Mapa de Lugares" />
+  <meta property="og:description" content="Explore os lugares que eu já fui e mande a sua indicação." />
   <meta property="og:type" content="website" />
 
-  <!-- Leaflet (mapa) -->
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
-    :root {
-      --bg: #ffffff;
-      --text: #1a1a1a;
-      --muted: #6b6b6b;
-      --line: #ececec;
-      --accent: #ff6b5a;       /* troque aqui sua cor de acento */
-      --accent-dark: #e8553f;
+    :root{
+      --bg:#ffffff; --text:#1a1a1a; --muted:#6b6b6b; --line:#ececec;
+      --accent:#ff6b5a;        /* seus lugares */
+      --accent-dark:#e8553f;
+      --tip:#2dd4bf;           /* indicações de seguidores */
+      --tip-dark:#14b8a6;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background: var(--bg); color: var(--text); }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
-    }
-    a { color: inherit; text-decoration: none; }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:var(--text);background:var(--bg);line-height:1.5;-webkit-font-smoothing:antialiased}
+    a{color:inherit;text-decoration:none}
+    .wrap{max-width:780px;margin:0 auto;padding:0 20px}
 
-    .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px; }
+    /* HEADER */
+    header{text-align:center;padding:52px 20px 24px}
+    .avatar{width:96px;height:96px;border-radius:50%;object-fit:cover;border:1px solid var(--line);background:#f2f2f2}
+    .name{font-size:26px;font-weight:700;margin-top:16px;letter-spacing:-.3px}
+    .bio{color:var(--muted);margin-top:6px;font-size:15px}
+    .socials{display:flex;gap:14px;justify-content:center;margin-top:20px}
+    .socials a{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+      border:1px solid var(--line);transition:all .15s ease}
+    .socials a:hover{border-color:var(--text);transform:translateY(-2px)}
+    .socials svg{width:20px;height:20px}
+    .cta{display:inline-block;background:var(--accent);color:#fff;padding:12px 26px;border-radius:999px;
+      font-weight:600;font-size:15px;border:none;cursor:pointer;transition:background .15s ease}
+    .cta:hover{background:var(--accent-dark)}
+    .cta.ghost{background:#fff;color:var(--text);border:1px solid var(--line)}
+    .cta.ghost:hover{border-color:var(--text)}
+    header .cta{margin-top:22px}
 
-    /* ---------- HEADER ---------- */
-    header { text-align: center; padding: 56px 20px 28px; }
-    .avatar {
-      width: 96px; height: 96px; border-radius: 50%;
-      object-fit: cover; border: 1px solid var(--line);
-      background: #f2f2f2;
-    }
-    .name { font-size: 26px; font-weight: 700; margin-top: 16px; letter-spacing: -0.3px; }
-    .bio { color: var(--muted); margin-top: 6px; font-size: 15px; }
+    /* STATS */
+    .stats{display:flex;justify-content:center;gap:34px;margin:34px 0 16px;padding:18px 0;
+      border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .stat{text-align:center}
+    .stat b{display:block;font-size:24px;font-weight:700}
+    .stat span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
 
-    .socials { display: flex; gap: 14px; justify-content: center; margin-top: 20px; }
-    .socials a {
-      width: 44px; height: 44px; border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      border: 1px solid var(--line); transition: all .15s ease;
-    }
-    .socials a:hover { border-color: var(--text); transform: translateY(-2px); }
-    .socials svg { width: 20px; height: 20px; }
+    /* MAP TOOLBAR */
+    .map-head{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 12px}
+    .map-head h2{font-size:20px;font-weight:700;letter-spacing:-.2px}
+    .legend{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--muted);margin-top:4px}
+    .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+    .legend .mine{background:var(--accent)} .legend .tip{background:var(--tip)}
 
-    .cta {
-      display: inline-block; margin-top: 22px;
-      background: var(--accent); color: #fff;
-      padding: 12px 26px; border-radius: 999px;
-      font-weight: 600; font-size: 15px; transition: background .15s ease;
-    }
-    .cta:hover { background: var(--accent-dark); }
+    #map{width:100%;height:480px;border:1px solid var(--line);border-radius:16px;overflow:hidden;position:relative}
+    #loading{position:absolute;z-index:500;top:12px;left:50%;transform:translateX(-50%);
+      background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:999px;
+      padding:6px 14px;font-size:13px;color:var(--muted);box-shadow:0 1px 6px rgba(0,0,0,.06)}
 
-    /* ---------- STATS ---------- */
-    .stats {
-      display: flex; justify-content: center; gap: 36px;
-      margin: 36px 0 18px; padding: 18px 0;
-      border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
-    }
-    .stat { text-align: center; }
-    .stat b { display: block; font-size: 24px; font-weight: 700; }
-    .stat span { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+    .leaflet-popup-content-wrapper{border-radius:12px}
+    .leaflet-popup-content{margin:0;width:230px!important}
+    .pop{padding:12px 14px}
+    .pop h3{font-size:15px;margin:0}
+    .pop .sub{font-size:12px;color:var(--muted);margin:2px 0 6px}
+    .pop p{font-size:13px;margin:0 0 8px}
+    .pop button.reel{background:var(--accent);color:#fff;border:none;border-radius:8px;
+      padding:7px 12px;font-size:13px;font-weight:600;cursor:pointer}
+    .pop .by{font-size:12px;color:var(--tip-dark);font-weight:600}
 
-    /* ---------- MAPA ---------- */
-    .map-title { text-align: center; margin: 30px 0 14px; }
-    .map-title h2 { font-size: 20px; font-weight: 700; letter-spacing: -0.2px; }
-    .map-title p { color: var(--muted); font-size: 14px; margin-top: 4px; }
-    #map {
-      width: 100%; height: 460px;
-      border: 1px solid var(--line); border-radius: 16px;
-      overflow: hidden;
-    }
+    /* FOOTER */
+    footer{text-align:center;padding:42px 20px 60px;color:var(--muted)}
+    footer .cta{margin-bottom:16px}
+    footer .small{font-size:13px;margin-top:10px}
 
-    /* popup do pin */
-    .leaflet-popup-content-wrapper { border-radius: 12px; }
-    .leaflet-popup-content { margin: 0; width: 220px !important; }
-    .pop img { width: 100%; height: 130px; object-fit: cover; display: block;
-      border-radius: 12px 12px 0 0; }
-    .pop .pop-body { padding: 10px 12px 12px; }
-    .pop h3 { font-size: 15px; margin: 0; }
-    .pop .place-country { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .pop p { font-size: 13px; color: var(--text); margin: 0; }
-    .pop a.pop-link { display: inline-block; margin-top: 8px; font-size: 13px;
-      font-weight: 600; color: var(--accent-dark); }
-
-    /* ---------- FOOTER ---------- */
-    footer { text-align: center; padding: 44px 20px 60px; color: var(--muted); }
-    footer .cta { margin-bottom: 18px; }
-    footer .small { font-size: 13px; margin-top: 10px; }
+    /* MODALS */
+    .overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;
+      justify-content:center;z-index:1000;padding:16px}
+    .overlay.open{display:flex}
+    .modal{background:#fff;border-radius:16px;width:100%;max-width:420px;max-height:90vh;overflow:auto;position:relative}
+    .modal .x{position:absolute;top:10px;right:12px;font-size:22px;line-height:1;color:#fff;
+      background:rgba(0,0,0,.4);border-radius:50%;width:30px;height:30px;border:none;cursor:pointer;z-index:2}
+    .reel-frame{width:100%;aspect-ratio:9/16;border:none;display:block;background:#000;border-radius:16px}
+    .form{padding:26px 24px}
+    .form h3{font-size:19px;margin-bottom:4px}
+    .form p.lead{font-size:14px;color:var(--muted);margin-bottom:16px}
+    .form label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+    .form input,.form textarea{width:100%;border:1px solid var(--line);border-radius:10px;padding:11px 12px;
+      font-size:14px;font-family:inherit}
+    .form input:focus,.form textarea:focus{outline:none;border-color:var(--text)}
+    .form textarea{resize:vertical;min-height:64px}
+    .form .submit{margin-top:18px;width:100%}
+    .form .msg{font-size:13px;margin-top:12px;text-align:center}
+    .form .x-dark{position:absolute;top:10px;right:12px;background:#f2f2f2;color:#333}
   </style>
 </head>
 <body>
   <div class="wrap">
 
-    <!-- ===== HEADER ===== -->
+    <!-- HEADER -->
     <header>
-      <img class="avatar" src="https://picsum.photos/seed/rafael/200/200" alt="Rafael Hideki" />
+      <img class="avatar" src="avatar.jpg" alt="Rafael Hideki" onerror="this.src='https://picsum.photos/seed/rafael/200/200'" />
       <div class="name">Rafael Hideki</div>
-      <div class="bio">Colecionando lugares pelo mundo — explore meu mapa 🗺️</div>
-
+      <div class="bio">POVs &amp; comida 🍜 — o mapa dos lugares que eu já fui</div>
       <div class="socials">
         <a href="https://instagram.com/rafaelh1deki" target="_blank" rel="noopener" aria-label="Instagram">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
@@ -120,75 +121,200 @@
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23 12s0-3.6-.5-5.3a2.7 2.7 0 0 0-1.9-1.9C18.9 4.3 12 4.3 12 4.3s-6.9 0-8.6.5A2.7 2.7 0 0 0 1.5 6.7C1 8.4 1 12 1 12s0 3.6.5 5.3a2.7 2.7 0 0 0 1.9 1.9c1.7.5 8.6.5 8.6.5s6.9 0 8.6-.5a2.7 2.7 0 0 0 1.9-1.9C23 15.6 23 12 23 12zM9.8 15.3V8.7l5.7 3.3-5.7 3.3z"/></svg>
         </a>
       </div>
-
       <a class="cta" href="mailto:contato.rafaelhideki@gmail.com?subject=Proposta%20de%20parceria">Quer fazer parceria?</a>
     </header>
 
-    <!-- ===== STATS ===== -->
+    <!-- STATS -->
     <div class="stats">
-      <div class="stat"><b id="stat-cities">–</b><span>Cidades</span></div>
-      <div class="stat"><b id="stat-countries">–</b><span>Países</span></div>
+      <div class="stat"><b id="s-places">–</b><span>Lugares</span></div>
+      <div class="stat"><b id="s-cities">–</b><span>Cidades</span></div>
+      <div class="stat"><b id="s-tips">–</b><span>Indicações</span></div>
     </div>
 
-    <!-- ===== MAPA ===== -->
-    <div class="map-title">
-      <h2>Meu mapa de viagens</h2>
-      <p>Clique nos pontos para ver cada lugar.</p>
+    <!-- MAP -->
+    <div class="map-head">
+      <div>
+        <h2>Meu mapa de lugares</h2>
+        <div class="legend"><span><i class="mine"></i>Onde eu fui</span><span><i class="tip"></i>Indicações</span></div>
+      </div>
+      <button class="cta" id="btn-suggest">📍 Indicar um lugar</button>
     </div>
-    <div id="map"></div>
+    <div id="map"><div id="loading">carregando lugares…</div></div>
 
-    <!-- ===== FOOTER ===== -->
+    <!-- FOOTER -->
     <footer>
       <a class="cta" href="mailto:contato.rafaelhideki@gmail.com?subject=Proposta%20de%20parceria">Vamos trabalhar juntos</a>
       <div>Me segue: @rafaelh1deki</div>
       <div class="small">© <span id="year"></span> Rafael Hideki</div>
     </footer>
-
   </div>
 
-  <!-- dados dos lugares -->
+  <!-- REEL MODAL -->
+  <div class="overlay" id="reel-overlay">
+    <div class="modal" style="background:transparent">
+      <button class="x" id="reel-close">×</button>
+      <iframe class="reel-frame" id="reel-frame" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+    </div>
+  </div>
+
+  <!-- SUGGEST MODAL -->
+  <div class="overlay" id="form-overlay">
+    <div class="modal">
+      <button class="x x-dark" id="form-close">×</button>
+      <form class="form" id="suggest-form">
+        <h3>Indicar um lugar 📍</h3>
+        <p class="lead">Conhece um lugar que eu preciso conhecer? Manda aqui que entra no mapa depois da minha revisão.</p>
+        <label>Nome do lugar</label>
+        <input name="place_name" required placeholder="Ex.: Cantina da Esquina" />
+        <label>Endereço (rua, número, bairro, cidade)</label>
+        <input name="address" required placeholder="Ex.: R. das Flores, 100 - Centro, Curitiba" />
+        <label>Seu @ do Instagram</label>
+        <input name="instagram" required placeholder="@seuuser" />
+        <label>Por que indica? (opcional)</label>
+        <textarea name="note" placeholder="Ex.: melhor coxinha da cidade"></textarea>
+        <button type="submit" class="cta submit" id="submit-btn">Enviar indicação</button>
+        <div class="msg" id="form-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
   <script src="places.js"></script>
   <script>
-    // ano no rodapé
     document.getElementById("year").textContent = new Date().getFullYear();
 
-    // contadores
-    document.getElementById("stat-cities").textContent = PLACES.length;
-    document.getElementById("stat-countries").textContent =
-      new Set(PLACES.map(p => p.country)).size;
+    // ---------- Supabase ----------
+    let sb = null;
+    const sbReady = typeof SUPABASE_URL === "string" && !SUPABASE_URL.includes("SEU-PROJETO");
+    if (sbReady) { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }
 
-    // mapa (estilo claro/minimalista CartoDB Positron)
-    const map = L.map("map", { scrollWheelZoom: false }).setView([20, 0], 2);
+    // ---------- Mapa ----------
+    const map = L.map("map", { scrollWheelZoom: false }).setView([-22, -48], 4);
     L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-      attribution: '&copy; OpenStreetMap &copy; CARTO',
-      subdomains: "abcd", maxZoom: 19
+      attribution: "&copy; OpenStreetMap &copy; CARTO", subdomains: "abcd", maxZoom: 19
     }).addTo(map);
 
-    // pino minimalista (bolinha na cor de acento)
+    function pin(color){
+      return L.divIcon({ className:"",
+        html:`<div style="width:16px;height:16px;border-radius:50%;background:${color};
+          border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+        iconSize:[16,16], iconAnchor:[8,8], popupAnchor:[0,-8] });
+    }
     const accent = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
-    function dot() {
-      return L.divIcon({
-        className: "",
-        html: `<div style="width:16px;height:16px;border-radius:50%;background:${accent};
-               border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,
-        iconSize: [16, 16], iconAnchor: [8, 8], popupAnchor: [0, -8]
+    const tip = getComputedStyle(document.documentElement).getPropertyValue("--tip").trim();
+
+    // ---------- Geocoding com cache (localStorage) ----------
+    async function geocode(query){
+      const key = "geo:" + query;
+      const cached = localStorage.getItem(key);
+      if (cached) return JSON.parse(cached);
+      const url = "https://nominatim.openstreetmap.org/search?format=json&limit=1&q=" + encodeURIComponent(query);
+      try{
+        const r = await fetch(url, { headers:{ "Accept":"application/json" }});
+        const d = await r.json();
+        if(!d || !d.length) return null;
+        const pt = { lat:parseFloat(d[0].lat), lng:parseFloat(d[0].lon) };
+        localStorage.setItem(key, JSON.stringify(pt));
+        return pt;
+      }catch(e){ return null; }
+    }
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+    // ---------- Reel modal ----------
+    const reelOverlay = document.getElementById("reel-overlay");
+    const reelFrame = document.getElementById("reel-frame");
+    function openReel(code){
+      reelFrame.src = "https://www.instagram.com/reel/" + code + "/embed";
+      reelOverlay.classList.add("open");
+    }
+    function closeReel(){ reelOverlay.classList.remove("open"); reelFrame.src=""; }
+    document.getElementById("reel-close").onclick = closeReel;
+    reelOverlay.onclick = e => { if(e.target === reelOverlay) closeReel(); };
+    window.openReel = openReel;
+
+    // ---------- Render dos meus lugares ----------
+    const bounds = [];
+    const baked = []; // para gravar coords depois (ver console)
+    async function loadPlaces(){
+      for (const p of PLACES){
+        let pt = (p.lat && p.lng) ? { lat:p.lat, lng:p.lng } : null;
+        if(!pt){
+          pt = await geocode(`${p.address}, ${p.city}, Brasil`);
+          await sleep(1100); // respeita o limite do geocodificador
+        }
+        if(!pt) continue;
+        baked.push({ name:p.name, lat:+pt.lat.toFixed(6), lng:+pt.lng.toFixed(6) });
+        bounds.push([pt.lat, pt.lng]);
+        const html = `<div class="pop">
+            <h3>${p.name}</h3>
+            <div class="sub">${p.address} · ${p.city}</div>
+            <p>${p.note || ""}</p>
+            <button class="reel" onclick="openReel('${p.reel}')">▶ Ver reel</button>
+          </div>`;
+        L.marker([pt.lat, pt.lng], { icon: pin(accent) }).addTo(map).bindPopup(html);
+        if (bounds.length) map.fitBounds(bounds, { padding:[50,50] });
+      }
+      document.getElementById("loading").style.display = "none";
+      // dica: copie o array abaixo do console e me mande pra "gravar" as coordenadas
+      console.log("COORDS_BAKE", JSON.stringify(baked));
+    }
+
+    // ---------- Render das indicações aprovadas ----------
+    async function loadTips(){
+      if(!sb){ document.getElementById("s-tips").textContent = "0"; return; }
+      const { data, error } = await sb.from("suggestions").select("*").eq("status","approved");
+      if(error || !data){ document.getElementById("s-tips").textContent = "0"; return; }
+      document.getElementById("s-tips").textContent = data.length;
+      data.forEach(s => {
+        if(s.lat == null || s.lng == null) return;
+        const handle = (s.instagram || "").replace(/^@/, "");
+        const by = handle ? `<div class="by">indicado por <a href="https://instagram.com/${handle}" target="_blank" rel="noopener">@${handle}</a></div>` : "";
+        const html = `<div class="pop">
+            <h3>${s.place_name}</h3>
+            <div class="sub">${s.address || ""}</div>
+            <p>${s.note || ""}</p>${by}
+          </div>`;
+        L.marker([s.lat, s.lng], { icon: pin(tip) }).addTo(map).bindPopup(html);
       });
     }
 
-    const bounds = [];
-    PLACES.forEach(p => {
-      bounds.push([p.lat, p.lng]);
-      const linkHtml = p.link
-        ? `<a class="pop-link" href="${p.link}" target="_blank" rel="noopener">Ver post →</a>` : "";
-      const imgHtml = p.photo ? `<img src="${p.photo}" alt="${p.city}">` : "";
-      const html = `<div class="pop">${imgHtml}<div class="pop-body">
-          <h3>${p.city}</h3>
-          <div class="place-country">${p.country}</div>
-          <p>${p.text || ""}</p>${linkHtml}</div></div>`;
-      L.marker([p.lat, p.lng], { icon: dot() }).addTo(map).bindPopup(html);
-    });
+    // ---------- Stats ----------
+    document.getElementById("s-places").textContent = PLACES.length;
+    document.getElementById("s-cities").textContent = new Set(PLACES.map(p=>p.city)).size;
 
-    if (bounds.length) map.fitBounds(bounds, { padding: [50, 50] });
+    // ---------- Form de indicação ----------
+    const formOverlay = document.getElementById("form-overlay");
+    const btnSuggest = document.getElementById("btn-suggest");
+    const formMsg = document.getElementById("form-msg");
+    btnSuggest.onclick = () => { formMsg.textContent=""; formOverlay.classList.add("open"); };
+    document.getElementById("form-close").onclick = () => formOverlay.classList.remove("open");
+    formOverlay.onclick = e => { if(e.target === formOverlay) formOverlay.classList.remove("open"); };
+
+    document.getElementById("suggest-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("submit-btn");
+      formMsg.style.color = "var(--muted)";
+      if(!sb){ formMsg.style.color="#c0392b"; formMsg.textContent="Indicações ainda não ativadas. Configure o Supabase (veja supabase-setup.md)."; return; }
+      const f = e.target;
+      const place_name = f.place_name.value.trim();
+      const address = f.address.value.trim();
+      const instagram = f.instagram.value.trim();
+      const note = f.note.value.trim();
+      btn.disabled = true; formMsg.textContent = "buscando o endereço no mapa…";
+      const pt = await geocode(address + ", Brasil");
+      if(!pt){ formMsg.style.color="#c0392b"; formMsg.textContent="Não encontrei esse endereço. Tente incluir rua, número e cidade."; btn.disabled=false; return; }
+      const { error } = await sb.from("suggestions").insert({
+        place_name, address, instagram, note, lat:pt.lat, lng:pt.lng, status:"pending"
+      });
+      if(error){ formMsg.style.color="#c0392b"; formMsg.textContent="Algo deu errado ao enviar. Tente de novo."; btn.disabled=false; return; }
+      formMsg.style.color="var(--tip-dark)";
+      formMsg.textContent="valeu! 💛 sua indicação aparece no mapa assim que eu revisar.";
+      f.reset(); btn.disabled=false;
+    };
+
+    // ---------- start ----------
+    loadTips();
+    loadPlaces();
   </script>
 </body>
 </html>

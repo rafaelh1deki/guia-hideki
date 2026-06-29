@@ -1,37 +1,38 @@
-# Mapa de Viagens — Rafael Hideki
+# Mapa de Lugares — Rafael Hideki
 
-Site de uma página com um mapa interativo dos lugares visitados + links das redes e contato para parcerias.
+Site de uma página com: bio + redes sociais + contato de parceria, um **mapa interativo** dos lugares que você já foi (puxados dos seus reels), reels embedados nos pins, e um **botão de indicação** onde seguidores mandam lugares (endereço + @) que entram no mapa após sua aprovação.
 
 ## Arquivos
 
-- `index.html` — a página inteira (visual e mapa).
-- `places.js` — a lista dos seus lugares. **É o único arquivo que você precisa editar no dia a dia.**
-- `README.md` — este guia.
+- `index.html` — o site inteiro (visual, mapa, modal do reel e formulário).
+- `places.js` — seus lugares (extraídos dos reels). **É o arquivo que você edita pra adicionar lugares seus.**
+- `config.js` — onde você cola as 2 chaves do Supabase.
+- `supabase-setup.md` — passo a passo pra criar o banco das indicações (~10 min).
+- `lugares-extraidos.md` — a lista de referência dos lugares achados nos seus reels.
 
-## Como adicionar um lugar novo
+## Como funciona
 
-1. Abra `places.js`.
-2. Copie um bloco `{ ... }` inteiro, cole no final da lista (antes do `]`).
-3. Troque os dados: cidade, país, foto, texto.
-4. Para pegar a latitude/longitude: pesquise o lugar no Google Maps, clique com o botão direito no ponto e copie os dois números (lat, lng).
-5. Salve. Se o site já estiver na Vercel, é só dar commit que ele se atualiza sozinho.
+- **Seus lugares** aparecem em pins na cor coral. Clicar mostra nome, endereço e um botão **▶ Ver reel** que abre o reel embedado.
+- **Indicações de seguidores** aparecem em pins na cor turquesa, com o @ de quem indicou.
+- O mapa usa o endereço pra achar o ponto automaticamente (geocodificação) e guarda em cache no navegador — o primeiro carregamento leva alguns segundos pra posicionar todos; depois fica instantâneo.
 
-## Como colocar suas fotos
+## Para publicar (resumo)
 
-As fotos de exemplo vêm de um serviço aleatório (`picsum.photos`). Para usar as suas:
+1. Suba os 4 arquivos (`index.html`, `places.js`, `config.js` + suas chaves) num repositório do GitHub. O `index.html` na **raiz**.
+2. vercel.com → login GitHub → **Add New → Project** → Import o repo → **Deploy**.
+3. Configure o Supabase seguindo o `supabase-setup.md` e cole as chaves no `config.js`.
 
-- Opção simples: suba suas imagens em qualquer hospedagem de imagem e cole o link no campo `photo`.
-- Ou crie uma pasta `fotos/` no repositório, suba as imagens lá e use `photo: "fotos/tokyo.jpg"`.
+> O site funciona sem o Supabase (mostra seu mapa normalmente). Sem ele, só o botão de indicação fica desativado com um aviso.
 
-A foto de perfil está no `index.html` (procure por `seed/rafael`) — troque pelo link da sua foto.
+## Adicionar um lugar seu
 
-## Publicar na Vercel
+Abra `places.js`, copie um bloco `{ ... }`, cole no final e troque os dados (nome, endereço, cidade, código do reel, nota). Salve e dê commit — a Vercel republica sozinha.
 
-1. Suba estes arquivos num repositório do GitHub.
-2. Em vercel.com, faça login com o GitHub.
-3. **Add New → Project → Import** o repositório → **Deploy**.
-4. Pronto: sai um link `seu-projeto.vercel.app`.
+## Trocar fotos e cores
 
-## Personalizar a cor
+- Foto de perfil: no `index.html`, procure por `seed/rafael` e troque pelo link da sua foto.
+- Cores dos pins: no topo do `<style>`, `--accent` (seus lugares) e `--tip` (indicações).
 
-No `index.html`, no topo do `<style>`, troque o valor de `--accent` pela cor que quiser (ex.: `--accent: #2dd4bf;`).
+## Observação sobre as coordenadas
+
+Hoje o site descobre as coordenadas sozinho a partir do endereço. Se quiser deixar o primeiro carregamento instantâneo, dá pra "gravar" as coordenadas fixas no `places.js` (campos `lat` e `lng`). O site já imprime essas coordenadas no console do navegador (procure por `COORDS_BAKE`) — é só me mandar que eu deixo gravado.
